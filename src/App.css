@@ -1,3 +1,7 @@
+*{
+  box-sizing: border-box;
+  text-decoration: none;
+}
 .App {
   text-align: center;
 }
@@ -5,6 +9,21 @@
 .App-logo {
   height: 40vmin;
   pointer-events: none;
+}
+.navbar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  font-size: 1.5rem;
+  background: rgba(27, 66, 20, 0.4);
+  
+}
+.navbar .nav-items{
+  margin-right: 2rem;
+}
+.navbar .nav-items a{
+  padding-left: 1rem;
 }
 
 @media (prefers-reduced-motion: no-preference) {
