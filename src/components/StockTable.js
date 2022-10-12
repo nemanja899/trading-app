@@ -2,23 +2,16 @@ import React from "react";
 import { useState, useEffect, useContext } from "react";
 import finhub from "../apis/finhub";
 import { nanoid } from "nanoid";
-import { FaCaretUp, FaRegWindowMinimize, FaCaretDown,FaStar,FaRegStar } from "react-icons/fa";
+import {
+  FaCaretUp,
+  FaRegWindowMinimize,
+  FaCaretDown,
+} from "react-icons/fa";
+import TablePaggination from "./TablePaggination";
 import { StockListContext } from "../context/stockListContext";
-import { CompactTable } from "@table-library/react-table-library/compact";
-import { useTheme } from "@table-library/react-table-library/theme";
-import {
-  DEFAULT_OPTIONS,
-  getTheme,
-} from "@table-library/react-table-library/chakra-ui";
-import { usePagination } from "@table-library/react-table-library/pagination";
-import {
-  Box,
-  HStack,
-  Button,
-  IconButton,
-  Tooltip,
-  Avatar,
-} from "@chakra-ui/react";
+import LogoSymbol from "./LogoSymbol";
+import {Spinner } from '@chakra-ui/react';
+import { checkTargetForNewValues } from "framer-motion";
 
 export default function StockTable() {
   const [pageStocks, setPageStocks] = useState(); //pagination 15 stocks with full data
@@ -44,20 +37,54 @@ export default function StockTable() {
         localStorage.setItem("usStocksSymbols", JSON.stringify(usData));
       } catch (error) {}
     };
-    if (localStorage.hasOwnProperty("usStockSymbols")) {
+    if (!localStorage.hasOwnProperty("usStockSymbols")) {
       fechData();
     }
     setUsStocks(JSON.parse(localStorage["usStocksSymbols"]));
   }, []);
 
-  // get and set 5 pagination stocks
+  // get and set 15 pagination stocks
+  useEffect(()=>{
+    let isOpen = true;
+    const watchListSlice= watchList.slice(pageFirst, pageFirst + 10);
+    const getDataProfiles = async () => {
+      try {
+        const responses = await Promise.all(
+          watchListSlice
+            .map((st) =>
+              finhub.get("/stock/profile2?", { params: { symbol: st } })
+            )
+        );
+
+        const watchListProfileData = responses.map((profile) => {
+          return { symbol: profile.config.params.symbol, data: profile.data };
+         
+        });
+        console.log(watchListProfileData);
+        if (isOpen) {
+          setPageStocksProfile([...watchListProfileData].slice());
+         
+        }
+       
+      } catch (error) {}
+    };
+
+    if (watchList.length > 0) {
+      getDataProfiles();
+      
+    }
+    return () => {
+      isOpen = false;
+    };
+  },[pageFirst,watchList]);
+
   useEffect(() => {
     let isOpen = true;
+    const watchListSlice= watchList.slice(pageFirst, pageFirst + 10);
     const getDataQuotes = async () => {
       try {
         const responses = await Promise.all(
-          watchList
-            .slice(pageFirst, pageFirst + 15)
+          watchListSlice
             .map((st) => finhub.get("/quote?", { params: { symbol: st } }))
         );
 
@@ -66,53 +93,31 @@ export default function StockTable() {
         });
 
         if (isOpen) {
-          setPageStocks(watchListStockData);
-        }
-      } catch (error) {}
-    };
-
-    const getDataProfiles = async () => {
-      try {
-        const responses = await Promise.all(
-          watchList
-            .slice(pageFirst, pageFirst + 15)
-            .map((st) =>
-              finhub.get("/stock/profile2?", { params: { symbol: st } })
-            )
-        );
-
-        const watchListProfileData = responses.map((profile) => {
-          return { symbol: profile.config.params.symbol, data: profile.data };
-        });
-        if (isOpen) {
-          setPageStocksProfile(watchListProfileData);
+          setPageStocks([...watchListStockData].slice());
         }
       } catch (error) {}
     };
 
     if (watchList.length > 0) {
       getDataQuotes();
-      getDataProfiles();
+      
     }
     return () => {
       isOpen = false;
     };
   }, [watchList, pageFirst]);
 
-  const chakraTheme = getTheme(DEFAULT_OPTIONS);
-  const theme = useTheme(chakraTheme);
+  const changeColor = (cng) => {
+    var color = cng > 0 ? "green" : cng === 0 ? "black" : "red";
+    return color;
+  };
 
-  const pagination = usePagination(pageStocks, {
-    state: {
-      page: 0,
-      size: 2,
-    },
-    onChange: onPaginationChange,
-  });
-
-  function onPaginationChange(action, state) {
-    console.log(action, state);
-  }
+  const handleClick = (e) => {
+    
+    setPageFirst((parseInt(e.target.getInnerHTML())-1)*10);
+    console.log(pageFirst);
+    
+  };
 
   function searchProfile(symbol) {
     for (let i = 0; i < pageStocksProfile.length; i++) {
@@ -121,10 +126,15 @@ export default function StockTable() {
       }
     }
   }
-  const changeColor = (cng) => {
-    var color = cng > 0 ? "green" : cng === 0 ? "black" : "red";
-    return color;
-  };
+  const checkPageStockProfile=React.useCallback(() => {
+    if(!pageStocksProfile)
+      return false;
+    for (let i = 0; i < pageStocksProfile.length; i++) {
+      if (!pageStocksProfile[i].symbol || !pageStocksProfile[i].data)
+        return false
+      return true;
+    }
+  },[pageStocksProfile]);
   const changeCarret = (cng) => {
     const Icon =
       cng > 0 ? (
@@ -154,30 +164,14 @@ export default function StockTable() {
           </tr>
         </thead>
         <tbody>
-          {pageStocks &&
-            pageStocksProfile &&
+          {(pageStocks &&
+            pageStocksProfile && checkPageStockProfile()) &&
             pageStocks.map((st) => {
               return (
                 <tr key={nanoid()}>
                   <td>
-                    <Tooltip hasArrow placement='top' label={searchProfile(st.symbol).data.name}>
-                      <div>
-                        <div style={{ display: "inline-block" }}>
-                          <Avatar
-                            size="sm"
-                            src={searchProfile(st.symbol).data.logo}
-                          />
-                        </div>
-                        <div
-                          style={{
-                            display: "inline-block",
-                            paddingLeft: "12px",
-                          }}
-                        >
-                          {st.symbol}
-                        </div>
-                      </div>
-                    </Tooltip>
+                   
+                    <LogoSymbol st={st} stockProfile={searchProfile(st.symbol)}/>
                   </td>
                   <td>{st.data.c}</td>
                   <td style={{ color: changeColor(st.data.d) }}>
@@ -197,7 +191,9 @@ export default function StockTable() {
             })}
         </tbody>
       </table>
-      <div></div>
+      <div>
+        <TablePaggination handleClick={handleClick} pageElements={10} elementList={watchList.length} pageFirst={pageFirst} />
+      </div>
     </div>
   );
 }
