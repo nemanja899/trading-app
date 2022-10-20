@@ -1,6 +1,7 @@
 import React from "react";
 import finhub from "../apis/finhub";
 import { StockListContext } from "../context/stockListContext";
+import { Highlight,Heading  } from "@chakra-ui/react";
 
 export default function SearchStock() {
   const [search, setSearch] = React.useState("");
@@ -12,19 +13,21 @@ export default function SearchStock() {
     try {
       function searchStocks() {
         return JSON.parse(localStorage["usStocksSymbols"]).filter(
-          (usStocksSymbols) => {return(
-            usStocksSymbols.symbol
-              .toLowerCase()
-              .includes(search.toLowerCase()) ||
+          (usStocksSymbols) => {
+            return (
+              usStocksSymbols.symbol
+                .toLowerCase()
+                .includes(search.toLowerCase()) ||
               usStocksSymbols.description
                 .toLowerCase()
-                .includes(search.toLowerCase()));
+                .includes(search.toLowerCase())
+            );
           }
         );
       }
 
       const usStocksSymbols = await searchStocks();
-     
+
       if (isOpen) {
         setData(usStocksSymbols);
       }
@@ -50,17 +53,19 @@ export default function SearchStock() {
     }
   }
 
-  function handleBlur() {
-    const element = document.getElementsByClassName("dropdown-menu");
-    const classes = element[0].className;
-    if (search.length > 0 && classes.includes("show")) {
-      element[0].classList.remove("show");
-    }
-  }
+
 
   return (
     <div className="w-50 p-5 rounded mx-auto">
       <div className="form-floating dropdown">
+        <Heading style={{alignItems:"center",textAlign:"center"}}size="md">
+        <Highlight
+          query={["stock","watchList"]}
+          styles={{ px: "2", py: "1", rounded: "full", bg: "green.100" }}
+        >
+          Add Stock to WatchList
+        </Highlight>
+        </Heading>
         <input
           style={{ backgroundColor: "antiquewhite" }}
           placeholder="search"
@@ -92,6 +97,7 @@ export default function SearchStock() {
                   className="dropdown-item"
                   onClick={() => {
                     addToWatchList(d.symbol);
+                    setSearch("");
                   }}
                 >
                   {d.description}({d.symbol})

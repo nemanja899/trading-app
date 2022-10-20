@@ -3,7 +3,6 @@ import { nanoid } from "nanoid";
 import { HStack, Button, filter } from "@chakra-ui/react";
 import { memo } from "react";
 import PaginationButton from "./PaginationButton";
-
 const TablePaggination = (props) => {
   const pages = Math.ceil(props.elementList / props.pageElements);
   const pageArray = new Array(pages).fill(undefined).map((_, e) => e + 1);

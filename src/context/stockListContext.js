@@ -3,7 +3,7 @@ import React from "react";
 export const StockListContext = React.createContext();
 
 export const StockListContextProvider = (props) => {
-  const [watchList, setWachList] = React.useState(["MSFT","AAPL","GOOG","AMZN","TSLA","BRK.A",
+  const [watchList, setWachList] = React.useState(localStorage['watchList']? localStorage['watchList'].split(',') :["MSFT","AAPL","GOOG","AMZN","TSLA","BRK.A",
 "UNH","JNJ","XOM","V","META","QCOM","MS","WMT","CVX","JPM","LLY","NVDA","PG","HD","MA","BAC","ABBV","PFE",
 "KO","PEP","MRK","BABA","COST","TMO","DHR","AVGO","ABT","TMUS","MCD","ORCL","CSCO",
 "ACN","WFC","VZ","NEE","COP","CRM","PM","CMCSA","BMY","TXN","SCHW","UPS","RTX","HON",
@@ -16,6 +16,9 @@ export const StockListContextProvider = (props) => {
      
     }
   }
+  React.useEffect(()=>{
+    localStorage.setItem("watchList", watchList);
+  },[watchList])
 
   function removeFromStockList(stock){
     const removeStock=watchList.filter(st => (st!==stock));
@@ -23,8 +26,12 @@ export const StockListContextProvider = (props) => {
     setWachList(removeStock);
   }
 
+  function sortWatchList(watchList){
+    setWachList([...watchList]);
+  }
+
   return (
-    <StockListContext.Provider value={{ watchList, addToWatchList,removeFromStockList }}>
+    <StockListContext.Provider value={{ watchList, addToWatchList,removeFromStockList,sortWatchList }}>
       {props.children}
     </StockListContext.Provider>
   );

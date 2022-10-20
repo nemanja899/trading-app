@@ -6,12 +6,19 @@ import {
   FaCaretUp,
   FaRegWindowMinimize,
   FaCaretDown,
+  FaSortNumericDownAlt,
+  FaSortNumericDown,
+  FaSortAlphaDown,
+  FaSortAlphaUpAlt,
 } from "react-icons/fa";
+import { FcDeleteRow } from "react-icons/fc";
 import TablePaggination from "./TablePaggination";
 import { StockListContext } from "../context/stockListContext";
 import LogoSymbol from "./LogoSymbol";
-import {Spinner } from '@chakra-ui/react';
+import { Spinner, Button, Tooltip,Badge } from "@chakra-ui/react";
 import { checkTargetForNewValues } from "framer-motion";
+import SortButton from "./SortButton";
+import {Link} from "react-router-dom";
 
 export default function StockTable() {
   const [pageStocks, setPageStocks] = useState(); //pagination 15 stocks with full data
@@ -20,7 +27,10 @@ export default function StockTable() {
   const [usStocks, setUsStocks] = useState([]); //  us stock exchange symbols and description
   const [pageFirst, setPageFirst] = useState(0); // pagination 1st  element on page
   const [pageStocksProfile, setPageStocksProfile] = useState(); // logo and companie profile
+
+  //
   // get all us stock exchange symbols
+
   useEffect(() => {
     const fechData = async () => {
       try {
@@ -34,58 +44,54 @@ export default function StockTable() {
           description: st.description,
         }));
 
-        localStorage.setItem("usStocksSymbols", JSON.stringify(usData));
+        localStorage.setItem("usStocksData", JSON.stringify(usData));
       } catch (error) {}
     };
-    if (!localStorage.hasOwnProperty("usStockSymbols")) {
+    if (!localStorage.hasOwnProperty("usStocksData")) {
       fechData();
     }
-    setUsStocks(JSON.parse(localStorage["usStocksSymbols"]));
+    setUsStocks(JSON.parse(localStorage["usStocksData"]));
   }, []);
 
   // get and set 15 pagination stocks
-  useEffect(()=>{
+  useEffect(() => {
     let isOpen = true;
-    const watchListSlice= watchList.slice(pageFirst, pageFirst + 10);
+    const watchListSlice = watchList.slice(pageFirst, pageFirst + 10);
     const getDataProfiles = async () => {
       try {
         const responses = await Promise.all(
-          watchListSlice
-            .map((st) =>
-              finhub.get("/stock/profile2?", { params: { symbol: st } })
-            )
+          watchListSlice.map((st) =>
+            finhub.get("/stock/profile2?", { params: { symbol: st } })
+          )
         );
 
         const watchListProfileData = responses.map((profile) => {
           return { symbol: profile.config.params.symbol, data: profile.data };
-         
         });
         console.log(watchListProfileData);
         if (isOpen) {
           setPageStocksProfile([...watchListProfileData].slice());
-         
         }
-       
       } catch (error) {}
     };
 
     if (watchList.length > 0) {
       getDataProfiles();
-      
     }
     return () => {
       isOpen = false;
     };
-  },[pageFirst,watchList]);
+  }, [pageFirst, watchList]);
 
   useEffect(() => {
     let isOpen = true;
-    const watchListSlice= watchList.slice(pageFirst, pageFirst + 10);
+    const watchListSlice = watchList.slice(pageFirst, pageFirst + 10);
     const getDataQuotes = async () => {
       try {
         const responses = await Promise.all(
-          watchListSlice
-            .map((st) => finhub.get("/quote?", { params: { symbol: st } }))
+          watchListSlice.map((st) =>
+            finhub.get("/quote?", { params: { symbol: st } })
+          )
         );
 
         const watchListStockData = responses.map((response) => {
@@ -100,7 +106,6 @@ export default function StockTable() {
 
     if (watchList.length > 0) {
       getDataQuotes();
-      
     }
     return () => {
       isOpen = false;
@@ -113,10 +118,8 @@ export default function StockTable() {
   };
 
   const handleClick = (e) => {
-    
-    setPageFirst((parseInt(e.target.getInnerHTML())-1)*10);
+    setPageFirst((parseInt(e.target.getInnerHTML()) - 1) * 10);
     console.log(pageFirst);
-    
   };
 
   function searchProfile(symbol) {
@@ -126,15 +129,16 @@ export default function StockTable() {
       }
     }
   }
-  const checkPageStockProfile=React.useCallback(() => {
-    if(!pageStocksProfile)
-      return false;
+
+  const checkPageStockProfile = React.useCallback(() => {
+    if (!pageStocksProfile) return false;
     for (let i = 0; i < pageStocksProfile.length; i++) {
       if (!pageStocksProfile[i].symbol || !pageStocksProfile[i].data)
-        return false
+        return false;
       return true;
     }
-  },[pageStocksProfile]);
+  }, [pageStocksProfile]);
+
   const changeCarret = (cng) => {
     const Icon =
       cng > 0 ? (
@@ -153,25 +157,34 @@ export default function StockTable() {
       <table className="table table-hover mt-5">
         <thead style={{ background: "#FFF5EE" }}>
           <tr>
-            <th scope="col">Name</th>
+            <th scope="col">
+              <SortButton name="Name" numerical={false} />
+            </th>
             <th scope="col">Current</th>
             <th scope="col">Change</th>
             <th scope="col">%Change</th>
             <th scope="col">High(d)</th>
             <th scope="col">Low(d)</th>
             <th scope="col">Open(d)</th>
-            <th scope="col">Prev</th>
+            <th scope="col">PrevClosed</th>
+            <th scope="col">Market cap</th>
           </tr>
         </thead>
         <tbody>
-          {(pageStocks &&
-            pageStocksProfile && checkPageStockProfile()) &&
+          {pageStocks &&
+            pageStocksProfile &&
+            checkPageStockProfile() &&
             pageStocks.map((st) => {
               return (
-                <tr key={nanoid()}>
+                <tr key={nanoid()} className="row-hover">
                   <td>
-                   
-                    <LogoSymbol st={st} stockProfile={searchProfile(st.symbol)}/>
+                    <LogoSymbol
+                      st={st}
+                      stockProfile={searchProfile(st.symbol)}
+                    />
+                    <div className="hide">
+                    <Link to={`/item/${st.symbol}`}><Badge style={{cursor:"pointer"}} variant='outline' colorScheme='green'>Details</Badge></Link>
+                    </div>
                   </td>
                   <td>{st.data.c}</td>
                   <td style={{ color: changeColor(st.data.d) }}>
@@ -186,13 +199,33 @@ export default function StockTable() {
                   <td>{st.data.l}</td>
                   <td>{st.data.o}</td>
                   <td>{st.data.pc}</td>
+                  {searchProfile(st.symbol) && (
+                    <td>
+                      {Math.round(
+                        searchProfile(st.symbol).data.marketCapitalization *
+                          1000
+                      ) / 1000}
+                      <Tooltip label="Remove from watchlist">
+                        <div className="hide">
+                          <Button onClick={()=>{removeFromStockList(st.symbol)}} style={{ background: "transparent" }}>
+                            <FcDeleteRow />
+                          </Button>
+                        </div>
+                      </Tooltip>
+                    </td>
+                  )}
                 </tr>
               );
             })}
         </tbody>
       </table>
       <div>
-        <TablePaggination handleClick={handleClick} pageElements={10} elementList={watchList.length} pageFirst={pageFirst} />
+        <TablePaggination
+          handleClick={handleClick}
+          pageElements={10}
+          elementList={watchList.length}
+          pageFirst={pageFirst}
+        />
       </div>
     </div>
   );
