@@ -16,7 +16,7 @@ const NewsArticles = (props) => {
         headers: {
           "content-type": "application/x-www-form-urlencoded",
           "X-RapidAPI-Key":
-            "3d23b800d8mshadd701eb03638e1p1c5cb8jsn9148daac1019",
+            "<your-rapid-API>",
           "X-RapidAPI-Host": "yahoo-finance97.p.rapidapi.com",
         },
         data: encodedParams,
